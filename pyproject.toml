@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "python-template"
+version = "0.1.0"
+description = ""
+authors = ["Antonio Moura <antonio.moura@pennfoster.edu>"]
+readme = "README.md"
+packages = [{include = "src"}] 
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^3.3.3"
+black = "^24.10.0"
+isort = "^5.13.2"
+pytest = "^8.3.4"
+pre-commit = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint]
+rcfile = ".pylintrc"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "PennFosterIncDataFeed"
+url = "https://pkgs.dev.azure.com/PennFosterInc/Data/_packaging/DataFeed/pypi/upload/"
+priority = "supplemental"

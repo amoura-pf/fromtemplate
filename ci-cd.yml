@@ -1,0 +1,104 @@
+# This file must be placed inside the `.github/workflows/` directory for the GitHub Actions workflow to run.
+
+# The CD steps below are currently configured to use Azure DevOps Artifacts, 
+# but they can be easily adapted for use with PyPI if needed.
+# STEPS (Azure DevOps):
+#   1) Configure Poetry for publishing to Azure DevOps Artifacts (or PyPI).
+#   2) Publish the package distributions to GitHub Releases. 
+
+name: Python package
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ci:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+
+    steps:
+
+    # Checks-out your repository so your job can access it
+    - name: Check-out repository
+      uses: actions/checkout@v4
+
+    # Setting Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    # Handle dependencies.
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pre-commit poetry
+        poetry install
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    # Sort properly the import of libraries and modules.
+    - name: (Isort) Import Sorting and Organization.
+      run: |
+        poetry run isort src
+    # Code Formatting and Sytle using BLACK
+    - name: (Black) Code Formatting and Style Enforcement.
+      run: |
+        poetry run black --line-length 120 src
+    # Lintining the code with PyLint
+    - name: (Pylint) Code Linting and Style Check.
+      run: |
+        poetry run pylint --rcfile=.pylintrc src
+
+  cd:
+    permissions:
+      id-token: write
+      contents: write
+
+    # Only run this job if the "ci" job passes
+    needs: ci
+
+    # Only run this job if new work is pushed to the "main" branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # Set up operating system
+    runs-on: ubuntu-latest
+
+    # Define job steps
+    steps:
+    # Checks-out your repository so your job can access it
+    - name: Check-out repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    # Setting Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    # Handle dependencies.
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install poetry pylint
+    # Setting Poetry Config
+    - name: Setting Poetry Config / Azure DevOps - Artifacts
+      run: |
+        poetry config http-basic.PennFosterIncDataFeed ${{ secrets.AZURE_ARTIFACTS_USER }} ${{ secrets.AZURE_ARTIFACTS_TOKEN }}
+    # Semantic Release to prepare release
+    - name: Use Python Semantic Release to prepare release
+      id: release
+      uses: python-semantic-release/python-semantic-release@v8.3.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    # Publish package distributions to GitHub Releases
+    - name: Publish package distributions to GitHub Releases
+      uses: python-semantic-release/upload-to-gh-release@main
+      if: steps.release.outputs.released == 'true'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
