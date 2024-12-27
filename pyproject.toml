@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fromtemplate"
 version = "0.1.0"
-description = ""
+description = "Repository to Test the template"
 authors = ["Antonio Moura <antonio.moura@pennfoster.edu>"]
 readme = "README.md"
 packages = [{include = "src"}] 
